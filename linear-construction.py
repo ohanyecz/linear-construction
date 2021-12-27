@@ -1,6 +1,8 @@
 import argparse
 from os import cpu_count
 
+from utils import FileType
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A linear construction of secret sharing schemes. See the manual for "
@@ -33,9 +35,9 @@ if __name__ == '__main__':
                         default=.0,
                         help="Skip the specified portion of the edges in the search tree")
     parser.add_argument("-o", "--output",
-                        type=argparse.FileType("w+"),
-                        default="output.txt",
-                        help="Save the solution with the arguments passed (default: %(default)s)")
+                        type=FileType("w+"),
+                        default="-",
+                        help="Save the solution with the arguments passed (default: stdout)")
     parser.add_argument("-f", "--force",
                         action="store_true",
                         help="If `True` override the output file if exists. Otherwise, save to an output file with "
