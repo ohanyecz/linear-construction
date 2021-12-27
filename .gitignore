@@ -1,0 +1,7 @@
+venv*/
+.idea/
+
+playground.py
+*.sage.py
+*.sage
+*.pdf
