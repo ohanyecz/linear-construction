@@ -1,7 +1,7 @@
 import argparse
 from os import cpu_count
 
-from utils import FileType
+from linearconstruction.utils import FileType
 
 
 if __name__ == '__main__':
