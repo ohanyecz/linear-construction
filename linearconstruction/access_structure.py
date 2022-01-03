@@ -28,25 +28,39 @@ class AccessStructure:
         The number of participants in the secret sharing scheme
     gamma_min : dict
         A dictionary of the minimal qualified sets.
+    create_dual : bool, optional
+        Create the dual of access structure passed as *gamma_min*.
 
 
     Examples
     --------
     >>> ac = AccessStructure(4, {1: {"a", "b"}, 2: {"c", "d"}, 3: {"b", "c"}})
     >>> ac.gamma_min
-    {1: {'a', 'b'}, 2: {'d', 'c'}, 3: {'b', 'c'}}
+    {1: {'b', 'a'}, 2: {'c', 'd'}, 3: {'b', 'c'}}
+    >>> ac_dual = AccessStructure(4, {1: {"a", "b"}, 2: {"c", "d"}, 3: {"b", "c"}}, create_dual=True)
+    >>> ac.gamma_min
+    {1: {'b', 'c'}, 2: {'c', 'a'}, 3: {'b', 'd'}}
+    >>> ac.dual() == ac_dual
+    True
+    >>> ac_dual.dual() == ac
+    True
 
     """
     def __init__(self,
                  n: int,
-                 gamma_min: QualifiedSets) -> None:
+                 gamma_min: QualifiedSets, *,
+                 create_dual: bool = False) -> None:
         self.participants = {i for i in ascii_lowercase[:n]}
         self.gamma_min = gamma_min
         self.gamma, self.delta = _calculate_sets(self.participants, gamma_min)
         self.delta_max = _calculate_group(max, self.delta)
+        if create_dual:
+            self.gamma_min = self._calculate_dual_gamma_min()
+            self.gamma, self.delta = _calculate_sets(self.participants, self.gamma_min)
+            self.delta_max = _calculate_group(max, self.delta)
 
     @classmethod
-    def from_args(cls, n: int, *iterables: Iterable) -> "AccessStructure":
+    def from_args(cls, n: int, *iterables: Iterable, create_dual: bool = False) -> "AccessStructure":
         """Create a non-trivial access structure form ``*iterables``.
 
 
@@ -60,13 +74,16 @@ class AccessStructure:
         >>> ac = AccessStructure.from_args(4, "ab", "cd", "bc")
         >>> ac.gamma_min
         {1: {'b', 'a'}, 2: {'c', 'd'}, 3: {'c', 'b'}}
+        >>> ac_dual = AccessStructure.from_args(4, "ab", "cd", "bc", create_dual=True)
+        >>> ac_dual.gamma_min
+        {1: {'b', 'c'}, 2: {'b', 'd'}, 3: {'c', 'a'}}
 
         """
         gamma_min = {k: set(v) for k, v in enumerate(iterables, start=1)}
-        return cls(n, gamma_min)
+        return cls(n, gamma_min, create_dual=create_dual)
 
     @classmethod
-    def from_iterable(cls, n: int, iterable: Iterable) -> "AccessStructure":
+    def from_iterable(cls, n: int, iterable: Iterable, *, create_dual: bool = False) -> "AccessStructure":
         """Create a non-trivial access structure from ``iterable``.
 
 
@@ -83,9 +100,15 @@ class AccessStructure:
         >>> ac = AccessStructure.from_iterable(4, [{"a", "b"}, {"b", "c"}, {"c", "d"}])
         >>> ac.gamma_min
         {1: {'b', 'a'}, 2: {'b', 'c'}, 3: {'c', 'd'}}
+        >>> ac = AccessStructure.from_iterable(4, ["ab", "cd", "bc"])
+        >>> ac.gamma_min
+        {1: {'a', 'b'}, 2: {'c', 'd'}, 3: {'c', 'b'}}
+        >>> ac_dual = AccessStructure.from_iterable(4, [["a", "b"], ["c", "d"], ["b", "c"]], create_dual=True)
+        >>> ac_dual.gamma_min
+        {1: {'c', 'a'}, 2: {'c', 'b'}, 3: {'b', 'd'}}
 
         """
-        return cls(n, {k: set(v) for k, v in enumerate(iterable, start=1)})
+        return cls(n, {k: set(v) for k, v in enumerate(iterable, start=1)}, create_dual=create_dual)
 
     def dual(self) -> "AccessStructure":
         """Calculate the dual access structure of ``self``.
@@ -111,18 +134,10 @@ class AccessStructure:
         >>> ac = AccessStructure(4, {1: {"a", "b"}, 2: {"c", "d"}, 3: {"b", "c"}})
         >>> ac.dual().gamma_min
         {1: {'d', 'b'}, 2: {'a', 'd'}, 3: {'a', 'c'}}
-
+        >>> ac.dual().dual() == ac
+        True
         """
-        gamma_min_dual = {}
-
-        k = 1
-        for x in powerset(self.participants):
-            x = set(x)
-            if self.participants - x in self.delta_max.values():
-                gamma_min_dual[k] = x
-                k += 1
-        n = len(self.participants)
-        return AccessStructure(n, gamma_min_dual)
+        return AccessStructure(len(self.participants), self._calculate_dual_gamma_min())
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, AccessStructure):
@@ -140,6 +155,15 @@ class AccessStructure:
 
     def __str__(self) -> str:
         return f"A non-trivial complete access structure on the set of {len(self.participants)} participants."
+
+    def _calculate_dual_gamma_min(self):
+        res, k = {}, 1
+        for x in powerset(self.participants):
+            x = set(x)
+            if self.participants - x in self.delta_max.values():
+                res[k] = x
+                k += 1
+        return res
 
 
 def _calculate_group(f, groups):
