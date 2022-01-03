@@ -8,6 +8,15 @@ from linearconstruction.utils import FileType
 import linearconstruction
 
 
+try:
+    from math import comb
+except ImportError:
+    from math import factorial
+
+    def comb(n, k):
+        return factorial(n) / (factorial(k) * factorial(n - k))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A linear construction of secret sharing schemes. See the manual for "
                                                  "usage examples.")
