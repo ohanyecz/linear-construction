@@ -22,10 +22,6 @@ if __name__ == '__main__':
     parser.add_argument("minimal",
                         nargs="+",
                         help="The minimal sets of the qualified groups.")
-
-    parser.add_argument("-t", "--traverse",
-                        help="Run the algorithm on all possible combination of parameters passed. The optional "
-                             "argument 'parameters' ignored.")
     parser.add_argument("-s", "--seed",
                         type=int,
                         default=None,
@@ -49,9 +45,6 @@ if __name__ == '__main__':
                         action="version")
 
     access_structure_group = parser.add_argument_group(title="Access structure modifiers")
-    access_structure_group.add_argument("-M", "--maximal",
-                                        nargs="+",
-                                        help="The maximal sets of the unqualified groups")
     access_structure_group.add_argument("-d", "--dual",
                                         action="store_true",
                                         help="Apply the algorithm to the dual of the specified access "
