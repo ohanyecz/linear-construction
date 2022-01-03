@@ -1,7 +1,11 @@
 import argparse
 from os import cpu_count
+import random
+
+from sage.all import factor, GF
 
 from linearconstruction.utils import FileType
+import linearconstruction
 
 
 if __name__ == '__main__':
@@ -62,6 +66,22 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    random.seed(args.seed)
+    ac = linearconstruction.AccessStructure.from_iterable(args.participants, args.minimal, create_dual=args.dual)
+    r = len(ac.gamma_min.keys())
+    k = args.k
+    if len(list(factor(args.order))) > 1:
+        raise ValueError(f"Order of the finite field is not a prime power.")
+    q = args.order
+    finite_field = GF(q)
+    eps = linearconstruction.epsilon(r, k)
+
+    if args.verbose:
+        print(f"Created a '{finite_field}'")
+        print(f"Created '{ac}'")
+        print(f"The height of the search tree: {r * k}")
+
+    args.output.close()
 
 #TODO: kiírni a futás végén, hogy a program hova mentette a fájlt
 #TODO: a traverse argumentumot értelmesen megcsinálni
