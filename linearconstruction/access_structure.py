@@ -24,11 +24,11 @@ class AccessStructure:
 
     Attributes
     ----------
-    n : int
+    n : *int*
         The number of participants in the secret sharing scheme
-    gamma_min : dict
+    gamma_min : *dict*
         A dictionary of the minimal qualified sets.
-    create_dual : bool, optional
+    create_dual : *bool, optional*
         Create the dual of access structure passed as *gamma_min*.
 
 
@@ -66,8 +66,8 @@ class AccessStructure:
 
         Returns
         -------
-        ac : AccessStructure
-
+        ac : *AccessStructure*
+            The access structure created.
 
         Examples
         --------
@@ -89,8 +89,8 @@ class AccessStructure:
 
         Returns
         -------
-        ac : AccessStructure
-
+        ac : *AccessStructure*
+            The access structure created.
 
         Examples
         --------
@@ -125,7 +125,7 @@ class AccessStructure:
 
         Returns
         -------
-        ac : AccessStructure
+        ac : *AccessStructure*
             The dual access structure of ``self``.
 
 
