@@ -13,22 +13,21 @@ __all__ = ["AccessStructure"]
 class AccessStructure:
     """Implementation of an access structure on a set of participants.
 
-    An access structure :math:`(\\Gamma, \\Delta)` on the set of participants specifies those
-    subsets of the participants who are qualified to reconstruct the secret and those subsets
+    An access structure :math:`(\\Gamma, \\Delta)` on the set of :math:`P` participants specifies
+    those subsets of the participants who are qualified to reconstruct the secret and those subsets
     of the participants who are forbidden to obtain additional knowledge about the secret by
     pooling their shares.
 
     An access structure is complete if :math:`\\Gamma \\cup \\Delta = 2^P`. The current
     implementation assumes complete access structures.
 
-
     Attributes
     ----------
-    n : *int*
+    n : int
         The number of participants in the secret sharing scheme
-    gamma_min : *dict*
+    gamma_min : dict
         A dictionary of the minimal qualified sets.
-    create_dual : *bool, optional*
+    create_dual : bool, optional
         Create the dual of access structure passed as *gamma_min*.
 
 
@@ -63,11 +62,14 @@ class AccessStructure:
     def from_args(cls, n: int, *iterables: Iterable, create_dual: bool = False) -> "AccessStructure":
         """Create a non-trivial access structure form ``*iterables``.
 
-
         Returns
         -------
-        ac : *AccessStructure*
+        ac : AccessStructure
             The access structure created.
+
+        See Also
+        --------
+        from_iterable : Another way to create an ``AccessStructure``.
 
         Examples
         --------
@@ -86,11 +88,14 @@ class AccessStructure:
     def from_iterable(cls, n: int, iterable: Iterable, *, create_dual: bool = False) -> "AccessStructure":
         """Create a non-trivial access structure from ``iterable``.
 
-
         Returns
         -------
-        ac : *AccessStructure*
+        ac : AccessStructure
             The access structure created.
+
+        See Also
+        --------
+        from_args : Another way to create an ``AccessStructure``.
 
         Examples
         --------
@@ -122,12 +127,10 @@ class AccessStructure:
 
         where :math:`X^c` is the complement of a subset of participants: :math:`X \\subseteq \\mathcal{P}`.
 
-
         Returns
         -------
-        ac : *AccessStructure*
+        ac : AccessStructure
             The dual access structure of ``self``.
-
 
         Examples
         --------
@@ -136,6 +139,7 @@ class AccessStructure:
         {1: {'d', 'b'}, 2: {'a', 'd'}, 3: {'a', 'c'}}
         >>> ac.dual().dual() == ac
         True
+
         """
         return AccessStructure(len(self.participants), self._calculate_dual_gamma_min())
 
