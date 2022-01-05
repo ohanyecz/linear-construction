@@ -1,12 +1,10 @@
 """Definition of code vector."""
 
-from dataclasses import dataclass
-from typing import Iterator, Tuple
+from typing import Iterator, Sequence, Tuple
 
-from sage.all import vector
+from sage.all import vector, GF
 
 
-@dataclass(frozen=True)
 class Vector:
     """
     An implementation of code vectors used in the algorithm for efficient looping
@@ -21,25 +19,44 @@ class Vector:
 
     Attributes
     ----------
-    c : vector
-        A Sage vector holding the code vector.
-    parameters : tuple
+    c : tuple or list or string
+        A tuple or list or string of integers that contains the elements of a code vector.
+    base_ring : GF
+        The base ring of the code vector.
+    pi : tuple
          The parameters assigned to the participant.
 
     Examples
     --------
     >>> parameters = (2, 3, 3, 2)
-    >>> v = Vector(vector([0, 1, 0, 1, 0, 1, 0, 1, 0, 1]), parameters)
+    >>> v = Vector([0, 1, 0, 1, 0, 1, 0, 1, 0, 1], GF(2), parameters)
     >>> for i in v:
     ...     print(i)
     (0, 1)
     (0, 1, 0)
     (1, 0, 1)
     (0, 1)
+    >>> for i in Vector((1, 0, 1, 0, 1, 0, 1, 0, 1, 0), GF(2), parameters):
+    ...     print(i)
+    (1, 0)
+    (1, 0, 1)
+    (0, 1, 0)
+    (1, 0)
+    >>> for i in Vector("0110101011", GF(2), parameters):
+    ...     print(i)
+    (0, 1)
+    (1, 0, 1)
+    (0, 1, 0)
+    (1, 1)
 
     """
-    c: vector
-    parameters: Tuple[int, ...]
+    def __init__(self,
+                 c: Sequence,
+                 base_ring: GF,
+                 pi: Tuple[int, ...]) -> None:
+        self.c = vector(c, base_ring)
+        self.base_ring = base_ring
+        self.parameters = pi
 
     def is_zero(self) -> bool:
         """Returns ``True`` if the code vector is zero, ``False`` otherwise."""
@@ -51,8 +68,18 @@ class Vector:
             yield self.c[i:s+i]
             i += s
 
+    def __eq__(self, other):
+        if not isinstance(other, Vector):
+            return False
+        return (self.base_ring == other.base_ring and
+                self.c == other.c and
+                self.parameters == other.parameters)
+
     def __ne__(self, other: "Vector") -> bool:
         return not self == other
 
     def __hash__(self) -> int:
         return hash((self.c + self.parameters))
+
+    def __str__(self) -> str:
+        return str(self.c)
