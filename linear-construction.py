@@ -21,7 +21,15 @@ except ImportError:
         return factorial(n) / (factorial(k) * factorial(n - k))
 
 
-# TODO: a 'total' paraméternek a levelek számát kell átadni
+def estimate_leaf_number() -> int:
+    p_sum = sum(parameters)
+    x_sum = [sum(parameters[j - 1] for j in x) for x in ac.gamma_min.values()]
+
+    if p_sum >= r * k:
+        return q ** (k * sum(x_sum))
+    return comb(r * k, p_sum) * q ** (p_sum * max(x_sum))
+
+
 def show_progressbar(leaf_counter: Value,
                      is_finished: Event) -> None:
     """
@@ -37,7 +45,9 @@ def show_progressbar(leaf_counter: Value,
     is_finished : threading.Event
         ``True`` if there is or is not a set of candidate vectors, ``False`` otherwise.
     """
-    pbar = tqdm(total=100, bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]", desc="Leaves",
+    pbar = tqdm(total=estimate_leaf_number(),
+                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]",
+                desc="Leaves",
                 dynamic_ncols=True)
     old_value = leaf_counter.value
     while not is_finished.is_set():
@@ -87,7 +97,7 @@ def submit_tasks(task_queue: Queue,
     j = 0
     while not is_finished.is_set():
         if j == 1337:
-            task_queue.put((linearconstruction.epsilon(j, k), 10))
+            task_queue.put((linearconstruction.epsilon(3, 2), 10))
         else:
             task_queue.put((tuple(), 1))
         j += 1
@@ -201,7 +211,8 @@ if __name__ == '__main__':
     q = args.order
     finite_field = GF(q)
     eps = linearconstruction.epsilon(r, k)
-    parameters = args.parameters if "," in args.parameters else int(args.parameters)
+    p = args.parameters
+    parameters = tuple(int(i) for i in p.split(",")) if "," in p else int(p)
 
     task_queue = Manager().Queue(maxsize=args.queuesize)
     done_queue = Manager().Queue(maxsize=100)
