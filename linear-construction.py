@@ -201,7 +201,7 @@ if __name__ == '__main__':
     q = args.order
     finite_field = GF(q)
     eps = linearconstruction.epsilon(r, k)
-    share_size = (2, 3, 3, 2)
+    parameters = args.parameters if "," in args.parameters else int(args.parameters)
 
     task_queue = Manager().Queue(maxsize=args.queuesize)
     done_queue = Manager().Queue(maxsize=100)
