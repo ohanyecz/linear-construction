@@ -146,6 +146,15 @@ def projection(v: Vector, x: Iterable, pi: Tuple[int, ...]) -> Vector:
     ...     print(i)
     (0, 1)
     (1, 0, 1)
+    >>> p = projection(v, [1, 2, 3, 4], parameters)
+    >>> for i in p:
+    ...     print(i)
+    (0, 1)
+    (0, 1, 0)
+    (1, 0, 1)
+    (1, 1)
+    >>> p == v
+    True
 
     """
     x = sorted(x)
