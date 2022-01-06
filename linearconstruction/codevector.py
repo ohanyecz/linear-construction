@@ -12,7 +12,7 @@ class Vector:
 
     Each participant has a code :math:`c^i \\in GF(q)^{p_i}` where :math:`p_i` are the
     parameters assigned for each participant (:math:`1 \\leq i \\leq n`). The code
-    vector is then :math:`c = (c^1, \\dots, c^n)` \\in GF(q)^{p[P]}`.
+    vector is then :math:`c = (c^1, \\dots, c^n) \\in GF(q)^{p[P]}`.
 
     An iterator is defined on the code vector since we work with components :math:`c^i`.
     See the examples.

@@ -33,7 +33,7 @@ def p_support(v: Vector) -> Set[int]:
 
     See Also
     --------
-    Vector : An object which stores a code vector.
+    .codevector.Vector : An object which stores a code vector.
 
     Examples
     --------
@@ -116,7 +116,7 @@ def jth_unit_vector(j: int, dim: int, base_ring: GF) -> vector:
 
 def projection(v: Vector, x: Iterable, pi: Tuple[int, ...]) -> Vector:
     """
-    Calculates the projection of code vector *v* on *x* set of participants.
+    Calculates the projection of code vector *v* on set of participants *x*.
 
     Parameters
     ----------
@@ -135,7 +135,7 @@ def projection(v: Vector, x: Iterable, pi: Tuple[int, ...]) -> Vector:
 
     See Also
     --------
-    Vector : An object which stores a code vector.
+    .codevector.Vector : An object which stores a code vector.
 
     Examples
     --------
