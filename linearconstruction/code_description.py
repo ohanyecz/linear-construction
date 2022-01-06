@@ -1,11 +1,13 @@
-from typing import Iterable, Set, Tuple
+from itertools import chain, product
+from typing import Iterable, Iterator, Set, Tuple
 
-from sage.all import vector, GF
+from sage.all import vector, GF, span
 
+from .access_structure import AccessStructure
 from .codevector import Vector
 from .typing import Epsilon
 
-__all__ = ["p_support", "epsilon", "jth_unit_vector", "projection"]
+__all__ = ["p_support", "epsilon", "jth_unit_vector", "projection", "generate_label"]
 
 
 def p_support(v: Vector) -> Set[int]:
@@ -164,3 +166,56 @@ def projection(v: Vector, x: Iterable, pi: Tuple[int, ...]) -> Vector:
             res += c
     pi_x = tuple(pi[i - 1] for i in x)
     return Vector(res, v.base_ring, pi_x)
+
+
+def generate_label(participants: set,
+                   pi: Tuple[int, ...],
+                   x_i: Iterable,
+                   base_ring: GF,
+                   lin_span: span) -> Iterator[Vector]:
+    """
+    Make an iterator over the possible edge labels.
+
+    An edge is labeled with a set of vectors :math:`S \\in GF(q)^{p[P]}` having the
+    property that for all :math:`\\mathbf{c} \\in S`
+
+    .. math::
+
+        \\sup(\\mathbf{c}) \\subseteq X_{i_{m + 1}}
+
+    where :math:`0 \\leq m < s` are the levels of the search tree.
+
+    Parameters
+    ----------
+    participants : set
+        The participants in the secret sharing scheme.
+    pi : tuple
+        The parameters of all participants.
+    x_i : set
+        A node of the search tree to which the edge goes.
+    base_ring : GF
+        The ring in which the labels are defined.
+    lin_span : span
+        The linear span of the vectors up until this node.
+
+    Returns
+    -------
+    it : Iterator
+        An iterator on *Vectors* over the possible edge labels.
+
+    See Also
+    --------
+    .codevector.Vector : An object which stores a code vector.
+
+    """
+    parts = []
+    for p in participants:
+        if p in x_i:
+            parts.append(product(base_ring.list(), repeat=pi[p - 1]))
+        else:
+            parts.append([tuple([0] * pi[p - 1])])
+
+    for p in product(*parts):
+        vec = list(chain.from_iterable(p))
+        if vec != [0] * sum(pi) and vec not in lin_span:
+            yield Vector(vec, base_ring, pi)
