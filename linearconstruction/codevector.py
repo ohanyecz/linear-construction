@@ -1,8 +1,10 @@
 """Definition of code vector."""
 
-from typing import Iterator, Sequence, Tuple
+from typing import Iterator, List, Sequence, Tuple
 
 from sage.all import vector, GF
+
+__all__ = ["Vector"]
 
 
 class Vector:
@@ -58,9 +60,62 @@ class Vector:
         self.base_ring = base_ring
         self.parameters = pi
 
+    @classmethod
+    def from_vector(cls, v: vector, pi: Tuple[int, ...]) -> "Vector":
+        """
+        Create a ``Vector`` from a Sage *vector*.
+
+        Parameters
+        ----------
+        v : Sage.vector
+            A Sage vector
+        pi : tuple
+            The parameters of all participants.
+
+        Returns
+        -------
+        vec : Vector
+
+        """
+        return cls(v.list(), v.base_ring(), pi)
+
+    @classmethod
+    def all_zero(cls, base_ring: GF, pi: Tuple[int, ...]) -> "Vector":
+        """
+        Create an all-zero vector in *base_ring* of size *pi*.
+
+        Parameters
+        ----------
+        base_ring : GF
+            The base ring in which the vector is defined.
+        pi : tuple
+            The parameters of all participants.
+
+        Returns
+        -------
+        v : Vector
+            The all-zero vector.
+
+        Examples
+        --------
+        >>> v = Vector.all_zero(GF(2), (2, 3, 3, 2))
+        >>> for i in v:
+        ...     print(i)
+        (0, 0)
+        (0, 0, 0)
+        (0, 0, 0)
+        (0, 0)
+
+        """
+        return cls([0] * sum(pi), base_ring, pi)
+
     def is_zero(self) -> bool:
         """Returns ``True`` if the code vector is zero, ``False`` otherwise."""
         return self.c.is_zero()
+
+    def list(self) -> List[int]:
+        """Return a list of elements of ``self``."""
+        return self.c.list()
 
     def __iter__(self) -> Iterator:
         i = 0
@@ -77,6 +132,14 @@ class Vector:
 
     def __ne__(self, other: "Vector") -> bool:
         return not self == other
+
+    def __mul__(self, other) -> "Vector":
+        v = self.c * other
+        return Vector.from_vector(v, self.parameters)
+
+    def __rmul__(self, other) -> "Vector":
+        v = other * self.c
+        return Vector.from_vector(v, self.parameters)
 
     def __hash__(self) -> int:
         return hash((self.c + self.parameters))
