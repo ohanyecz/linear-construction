@@ -1,15 +1,17 @@
 import argparse
-from multiprocessing import Process, Value, Manager
+from multiprocessing import Process, Value, Manager, current_process
 from os import cpu_count
 import random
+from time import perf_counter, sleep
 from threading import Event, Thread
+from typing import List
 from queue import Queue  # import only for typing
 
-from sage.all import factor, GF
+from sage.all import factor, GF, matrix, span
 from tqdm import tqdm
 
 from linearconstruction.utils import FileType
-import linearconstruction
+from linearconstruction import *
 
 
 try:
@@ -73,10 +75,16 @@ def process_tasks(task_queue: Queue,
     - the second object is an *int* indicating the number of leaves skipped when the
     function ``d_plus()`` returns ``False``, 1 otherwise.
     """
-    ...
+    while not is_finished.is_set():
+        params = task_queue.get()
+        if params != "DONE":
+            res = search.sequential_search(*params)
+            done_queue.put(res)
+        else:
+            break
+    done_queue.put("STOP")
 
 
-# TODO: a konkrét működésre kéne formázni
 def submit_tasks(task_queue: Queue,
                  is_finished: Event) -> None:
     """
@@ -94,20 +102,21 @@ def submit_tasks(task_queue: Queue,
         ``True`` if a suitable set of vectors are found or there is no suitable
         set of vectors. ``False`` otherwise
     """
-    j = 0
-    while not is_finished.is_set():
-        if j == 1337:
-            task_queue.put((linearconstruction.epsilon(3, 2), 10))
-        else:
-            task_queue.put((tuple(), 1))
-        j += 1
-    task_queue.put(("STOP", 0))
+    s_m = {}
+    s_n = set()
+    d_comp = [list(ac.participants - ac.delta_max[i]) for i in ac.delta_max.keys()]
+    id_matrix_sizes = [sum(parameters[i - 1] for i in d_comp[j]) for j in range(len(d_comp))]
+    aa = [matrix(finite_field, [[0] * k] * i) for i in id_matrix_sizes]
+    ba = [matrix.identity(i) for i in id_matrix_sizes]
+    ca = []
+
+    search.parallel_search(1, s_m, s_n, aa, ba, ca, args.skip, task_queue, is_finished)
+    task_queue.put("DONE")
 
 
-# TODO: ha van megoldás, csináljunk is vele valamit
 def monitor_finished_tasks(done_queue: Queue,
                            is_finished: Event,
-                           leaf_counter: Value) -> None:
+                           result: List) -> None:
     """
     Checks the content of *done_queue*.
 
@@ -133,14 +142,12 @@ def monitor_finished_tasks(done_queue: Queue,
     submit_tasks : For how the elements in *done_queue* are built.
     """
     while not is_finished.is_set():
-        solution, n_leaves = done_queue.get()
+        solution = done_queue.get()
         if solution == "STOP":
             is_finished.set()
         elif solution:
+            result.extend(solution)
             is_finished.set()
-        else:
-            with leaf_counter.get_lock():
-                leaf_counter.value += n_leaves
 
 
 if __name__ == '__main__':
@@ -203,44 +210,89 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     random.seed(args.seed)
-    ac = linearconstruction.AccessStructure.from_iterable(args.participants, args.minimal, create_dual=args.dual)
+    ac = AccessStructure.from_iterable(args.participants, args.minimal, create_dual=args.dual)
     r = len(ac.gamma_min.keys())
     k = args.k
     if len(list(factor(args.order))) > 1:
         raise ValueError(f"Order of the finite field is not a prime power.")
     q = args.order
     finite_field = GF(q)
-    eps = linearconstruction.epsilon(r, k)
+    eps = epsilon(r, k)
     p = args.parameters
     parameters = tuple(int(i) for i in p.split(",")) if "," in p else int(p)
 
     task_queue = Manager().Queue(maxsize=args.queuesize)
     done_queue = Manager().Queue(maxsize=100)
-    is_finished = Event()
+    is_finished = Manager().Event()
     leaf_counter = Value("i", 0)
+    result = Manager().list()
+
+    search = SearchAlgorithm(ac, k, finite_field, eps, parameters, r * k)
 
     if args.verbose:
         print(f"Created a '{finite_field}'")
         print(f"Created '{ac}'")
         print(f"The height of the search tree: {r * k}")
+        print(f"Parent process: PID={current_process().pid}")
 
     if args.verbose:
         progressbar_thread = Thread(target=show_progressbar,
                                     args=(leaf_counter, is_finished)).start()
 
-    monitor_thread = Thread(target=monitor_finished_tasks,
-                            args=(done_queue, is_finished, leaf_counter)).start()
-    task_builder_thread = Thread(target=submit_tasks,
-                                 args=(done_queue, is_finished)).start()
+    sleep(0.1)
+    monitor_process = Thread(target=monitor_finished_tasks,
+                             args=(done_queue, is_finished, result))
+    monitor_process.start()
 
-    # worker_processes = [Process(target=process_tasks,
-    #                             args=(task_queue, done_queue, is_finished)) for _ in range(args.processes)]
-    # for p in worker_processes:
-    #     p.start()
+    task_builder_process = Process(target=submit_tasks,
+                                   args=(task_queue, is_finished))
+    worker_processes = [Process(target=process_tasks,
+                                args=(task_queue, done_queue, is_finished)) for _ in range(args.processors)]
+    for p in worker_processes:
+        p.start()
 
+    start = perf_counter()
+    task_builder_process.start()
     is_finished.wait()
+    delta = perf_counter() - start
 
+    task_builder_process.terminate()
+    task_builder_process.join()
+    for p in worker_processes:
+        p.terminate()
+    for p in worker_processes:
+        p.join()
+    monitor_process.join()
+
+    if result:
+        unit_vectors = [jth_unit_vector(j[1], k, finite_field) for j in eps]
+        generator_matrix = matrix(finite_field, [e.list() + v.c.list() for e, v in zip(unit_vectors, result)])
+        parity_check_matrix = generator_matrix.right_kernel_matrix()
+        gen_vec_matrix = parity_check_matrix[:, 2:]
+        if search.is_valid_gen_vec_constr(gen_vec_matrix):
+            args.output.write(f"Participants: {ac.participants}\n")
+            args.output.write(f"Parameters: {parameters}\n")
+            args.output.write(f"Minimal qualified groups: {str(ac.gamma_min)}\n")
+            args.output.write(f"Maximal forbidden groups: {str(ac.delta_max)}\n")
+            args.output.write(f"Dual: {args.dual}\n")
+            args.output.write(f"Finite field: {str(finite_field)}\n")
+            args.output.write(f"Size of the secret: {k}\n")
+            args.output.write(f"Skip: {args.skip}\n")
+            args.output.write(f"Seed: {args.seed}\n")
+            args.output.write(f"Number of processors: {args.processors}\n")
+            args.output.write(f"Running time: {delta} seconds\n\n")
+            args.output.write(f"The generator matrix:\n")
+            for row in generator_matrix:
+                args.output.write(str(row) + "\n")
+            args.output.write(f"\nThe parity check matrix:\n")
+            for row in parity_check_matrix:
+                args.output.write(str(row) + "\n")
+            args.output.write(f"\nThe Generalized Vector Space Construction:\n")
+            for row in gen_vec_matrix:
+                args.output.write(str(row) + "\n")
+        else:
+            args.output.write(f"The candidate vectors are not valid.")
+    else:
+        args.output.write(f"There does not exists a general vector space construction with the specified parameters!")
+    print("done.")
     args.output.close()
-
-#TODO: kiírni a futás végén, hogy a program hova mentette a fájlt
-#TODO: a traverse argumentumot értelmesen megcsinálni
