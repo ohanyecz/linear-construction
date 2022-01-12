@@ -143,7 +143,10 @@ class AccessStructure:
         True
 
         """
-        return AccessStructure(len(self.participants), self._calculate_dual_gamma_min())
+        gamma_min_dual = {}
+        for k, v in self._calculate_dual_gamma_min().items():
+            gamma_min_dual[k] = {ascii_lowercase[i - 1] for i in v}
+        return AccessStructure(len(self.participants), gamma_min_dual)
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, AccessStructure):
