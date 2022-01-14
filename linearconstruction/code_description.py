@@ -159,6 +159,8 @@ def projection(v: Vector, x: Iterable, pi: Tuple[int, ...]) -> Vector:
     True
 
     """
+    if not x:
+        raise ValueError(f"Cannot create a projection on an empty set 'x'.")
     x = sorted(x)
     res = []
     for i, c in enumerate(v, start=1):
