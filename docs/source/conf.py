@@ -22,7 +22,7 @@ import linearconstruction
 project = 'A Linear Construction of Secret Sharing Schemes'
 copyright = '2022, Ottó Hanyecz'
 author = 'Ottó Hanyecz'
-release = '0.1.0beta'
+release = '1.1.0'
 
 
 # -- General configuration ---------------------------------------------------
