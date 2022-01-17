@@ -1,9 +1,7 @@
 Linear Construction of Secret Sharing Schemes
 =============================================
 
-**An implementation of the algorithm described in `van Dijk (1997)`.**
-
-.. _van Dijk (1997): https://link.springer.com/article/10.1023/A:1008259214236
+**An implementation of the algorithm described in `van Dijk (1997) <https://link.springer.com/article/10.1023/A:1008259214236>`_.**
 
 Documentation
 -------------
