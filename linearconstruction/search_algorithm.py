@@ -3,7 +3,7 @@ from itertools import product
 from multiprocessing import Event, Value  # import only for typing
 from queue import Queue  # import only for typing
 import random
-from typing import List, Union, Tuple, Set
+from typing import Dict, List, Union, Tuple, Set
 
 from sage.all import GF, inverse_mod, matrix, span, vector
 
@@ -16,6 +16,24 @@ __all__ = ["SearchAlgorithm"]
 
 
 class SearchAlgorithm:
+    """
+    The implementation of the search algorithm described in the article.
+
+    Attributes
+    ----------
+    ac : AccessStructure
+
+    k : int
+        The size of the secret.
+    base_ring : GF
+        The base ring of all vector and matrix multiplications.
+    eps : list
+        A list of tuples of code vector indices.
+    parameters : tuple
+        The parameters of all participants.
+    height : int
+        The height of the search tree.
+    """
     def __init__(self,
                  ac: AccessStructure,
                  k: int,
@@ -32,12 +50,39 @@ class SearchAlgorithm:
 
     def sequential_search(self,
                           level: int,
-                          s_m,
+                          s_m: Dict[str, Vector],
                           s_n: Set[int],
                           aa: List[matrix],
                           ba: List[matrix],
                           ca: List[Vector],
                           skip: float) -> Union[List[Vector], List]:
+        """
+        Sequential implementation of the search algorithm.
+
+        Parameters
+        ----------
+        level : int
+            The current level of the search tree.
+        s_m : dict
+            A dictionary of the edge labels on the path to the current node.
+        s_n : set
+            The set of levels on the path to the current node for which the edge label is a
+            singleton set.
+        aa : list
+            A list of matrices :math:`A_i(\texttt{n})`.
+        ba : list
+            A list of matrices :math:`B_i(\texttt{n}')`.
+        ca : list
+            The list of candidate vectors.
+        skip : float
+            The skip parameter passed as argument.
+
+        Returns
+        -------
+        res : list
+            An empty list if there is no suitable sets of vectors, the list of suitable
+            sets of vectors otherwise.
+        """
         if level > self.height:
             return ca
 
@@ -78,7 +123,7 @@ class SearchAlgorithm:
 
     def parallel_search(self,
                         level: int,
-                        s_m,
+                        s_m: Dict[str, Vector],
                         s_n: Set[int],
                         aa: List[matrix],
                         ba: List[matrix],
@@ -86,6 +131,38 @@ class SearchAlgorithm:
                         skip: float,
                         task_queue: Queue,
                         is_finished: Event) -> None:
+        """
+        The parallel implementation of the search algorithm.
+
+        When the algorithm reaches level :math:`r` of the search tree the method
+        puts the parameters to the ``task_queue``. The other processes can use these
+        parameters to run method ``sequential_search()`` to find a solution (if there
+        are any).
+
+        Parameters
+        ----------
+        level : int
+            The current level of the search tree.
+        s_m : dict
+            A dictionary of the edge labels on the path to the current node.
+        s_n : set
+            The set of levels on the path to the current node for which the edge label is a
+            singleton set.
+        aa : list
+            A list of matrices :math:`A_i(\texttt{n})`.
+        ba : list
+            A list of matrices :math:`B_i(\texttt{n}')`.
+        ca : list
+            The list of candidate vectors.
+        skip : float
+            The skip parameter passed as argument.
+        task_queue : Queue
+            The task queue for other processes.
+        is_finished : Event
+            A shared event between the processes. If set, a solution is found (positive or
+            negative) and the worker processes terminate.
+
+        """
         if level == self.height // 2 + 1:
             task_queue.put((level, s_m, s_n, aa, ba, ca, skip))
             return
