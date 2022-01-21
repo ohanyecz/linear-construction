@@ -1,9 +1,11 @@
-1.1.1 (2022-01-19)
+1.1.1 (2022-01-21)
 ==================
 
 - Updated documentation.
 
 - Added exceptions specific to this project.
+
+- Refactor utils.py and exceptions.py to a submodule ``utils``.
 
 
 1.1.0 (2022-01-17)
