@@ -16,3 +16,14 @@ Classes
    :toctree: api/
 
    FileType
+
+Exceptions
+~~~~~~~~~~
+
+The following classes are exceptions for `linearconstruction`.
+
+.. autosummary::
+   :toctree: api/
+
+   LinearConstructionException
+   LinearConstructionDeprecationWarning
