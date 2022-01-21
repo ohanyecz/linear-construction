@@ -12,17 +12,17 @@ class Vector:
     An implementation of code vectors used in the algorithm for efficient looping
     over the components.
 
-    Each participant has a code :math:`c^i \\in GF(q)^{p_i}` where :math:`p_i` are the
+    Each participant has a code :math:`\\mathbf{c}^i \\in \\text{GF}(q)^{p_i}` where :math:`p_i` are the
     parameters assigned for each participant (:math:`1 \\leq i \\leq n`). The code
-    vector is then :math:`c = (c^1, \\dots, c^n) \\in GF(q)^{p[P]}`.
+    vector is then :math:`\\mathbf{c} = (\\mathbf{c}^1, \\dots, \\mathbf{c}^n) \\in \\text{GF}(q)^{p[\\mathcal{P}]}`.
 
-    An iterator is defined on the code vector since we work with components :math:`c^i`.
+    An iterator is defined on the code vector since we work with components :math:`\\mathbf{c}^i`.
     See the examples.
 
     Attributes
     ----------
-    c : tuple or list or string
-        A tuple or list or string of integers that contains the elements of a code vector.
+    c : vector
+        A Sage vector object containing the code vector in *base_ring*.
     base_ring : GF
         The base ring of the code vector.
     pi : tuple
@@ -63,18 +63,18 @@ class Vector:
     @classmethod
     def from_vector(cls, v: vector, pi: Tuple[int, ...]) -> "Vector":
         """
-        Create a ``Vector`` from a Sage *vector*.
+        Create a `~Vector` from a Sage *vector*.
 
         Parameters
         ----------
-        v : Sage.vector
+        v : vector
             A Sage vector
         pi : tuple
             The parameters of all participants.
 
         Returns
         -------
-        vec : Vector
+        vec : `~Vector`
 
         """
         return cls(v.list(), v.base_ring(), pi)
@@ -93,7 +93,7 @@ class Vector:
 
         Returns
         -------
-        v : Vector
+        v : `~Vector`
             The all-zero vector.
 
         Examples

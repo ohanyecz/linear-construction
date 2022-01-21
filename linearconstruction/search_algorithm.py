@@ -10,7 +10,7 @@ from sage.all import GF, inverse_mod, matrix, span, vector
 from .access_structure import AccessStructure
 from .code_description import generate_label, jth_unit_vector, p_support, projection
 from .codevector import Vector
-from .typing import Epsilon
+
 
 __all__ = ["SearchAlgorithm"]
 
@@ -21,7 +21,7 @@ class SearchAlgorithm:
 
     Attributes
     ----------
-    ac : AccessStructure
+    ac : `~linearconstruction.access_structure.AccessStructure`
 
     k : int
         The size of the secret.
@@ -38,7 +38,7 @@ class SearchAlgorithm:
                  ac: AccessStructure,
                  k: int,
                  base_ring: GF,
-                 eps: Epsilon,
+                 eps: List[Tuple[int, int]],
                  parameters: Tuple[int, ...],
                  height: int) -> None:
         self.ac = ac
@@ -69,9 +69,9 @@ class SearchAlgorithm:
             The set of levels on the path to the current node for which the edge label is a
             singleton set.
         aa : list
-            A list of matrices :math:`A_i(\texttt{n})`.
+            A list of matrices :math:`A_i(\\texttt{n})`.
         ba : list
-            A list of matrices :math:`B_i(\texttt{n}')`.
+            A list of matrices :math:`B_i(\\texttt{n}')`.
         ca : list
             The list of candidate vectors.
         skip : float
@@ -135,8 +135,8 @@ class SearchAlgorithm:
         The parallel implementation of the search algorithm.
 
         When the algorithm reaches level :math:`r` of the search tree the method
-        puts the parameters to the ``task_queue``. The other processes can use these
-        parameters to run method ``sequential_search()`` to find a solution (if there
+        puts the parameters to the *task_queue*. The other processes can use these
+        parameters to run method `~sequential_search()` to find a solution (if there
         are any).
 
         Parameters
@@ -149,9 +149,9 @@ class SearchAlgorithm:
             The set of levels on the path to the current node for which the edge label is a
             singleton set.
         aa : list
-            A list of matrices :math:`A_i(\texttt{n})`.
+            A list of matrices :math:`A_i(\\texttt{n})`.
         ba : list
-            A list of matrices :math:`B_i(\texttt{n}')`.
+            A list of matrices :math:`B_i(\\texttt{n}')`.
         ca : list
             The list of candidate vectors.
         skip : float

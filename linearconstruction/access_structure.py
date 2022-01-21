@@ -1,11 +1,9 @@
 """Implementation of access structure on a set of participants."""
 
 from string import ascii_lowercase
-from typing import Iterable
+from typing import Dict, Iterable, Set
 
 from sage.all import powerset
-
-from .typing import QualifiedSets
 
 __all__ = ["AccessStructure"]
 
@@ -21,7 +19,7 @@ class AccessStructure:
     An access structure is complete if :math:`\\Gamma \\cup \\Delta = 2^P`. The current
     implementation assumes complete access structures.
 
-    Attributes
+    Parameters
     ----------
     n : int
         The number of participants in the secret sharing scheme
@@ -30,6 +28,18 @@ class AccessStructure:
     create_dual : bool, optional
         Create the dual of access structure passed as *gamma_min*.
 
+    Attributes
+    ----------
+    participants : set
+        The set of participants in the access structure.
+    gamma_min : dict
+        A dictionary of the minimal qualified sets.
+    delta_max : dict
+        A dictionary of the maximal forbidden sets.
+    gamma : list
+        The list of all qualified sets.
+    delta : list
+        The list of all forbidden sets.
 
     Examples
     --------
@@ -47,7 +57,7 @@ class AccessStructure:
     """
     def __init__(self,
                  n: int,
-                 gamma_min: QualifiedSets, *,
+                 gamma_min: Dict[int, Set[str]], *,
                  create_dual: bool = False) -> None:
         self.participants = set(range(1, n + 1))
         self.gamma_min = {}
@@ -62,16 +72,18 @@ class AccessStructure:
 
     @classmethod
     def from_args(cls, n: int, *iterables: Iterable, create_dual: bool = False) -> "AccessStructure":
-        """Create a non-trivial access structure form ``*iterables``.
+        """Create a non-trivial access structure form *iterables*. If *create_dual* is ``True``, create
+        the dual access structure.
 
         Returns
         -------
-        ac : AccessStructure
+        ac : `~linearconstruction.access_structure.AccessStructure`
             The access structure created.
 
         See Also
         --------
-        from_iterable : Another way to create an ``AccessStructure``.
+        from_iterable : Another way to create an `~linearconstruction.access_structure.AccessStructure`.
+        dual : How the dual access structure is defined.
 
         Examples
         --------
@@ -88,16 +100,18 @@ class AccessStructure:
 
     @classmethod
     def from_iterable(cls, n: int, iterable: Iterable, *, create_dual: bool = False) -> "AccessStructure":
-        """Create a non-trivial access structure from ``iterable``.
+        """Create a non-trivial access structure from *iterable*. If *create_dual* is ``True``, create
+        the dual access structure.
 
         Returns
         -------
-        ac : AccessStructure
+        ac : `~linearconstruction.access_structure.AccessStructure`
             The access structure created.
 
         See Also
         --------
-        from_args : Another way to create an ``AccessStructure``.
+        from_args : Another way to create an `~linearconstruction.access_structure.AccessStructure`.
+        dual : How the dual access structure is defined.
 
         Examples
         --------
@@ -124,14 +138,15 @@ class AccessStructure:
 
         .. math::
 
-            \\{ X : X^c \\in \\Delta \\} = \\Gamma^{\\bot},
-            \\{ X : X^c \\in \\Gamma \\} = \\Delta^{\\bot}
+                \\Gamma^{\\bot} &= \\{ X : X^c \\in \\Delta \\},
+
+                \\Delta^{\\bot} &= \\{ X : X^c \\in \\Gamma \\}
 
         where :math:`X^c` is the complement of a subset of participants: :math:`X \\subseteq \\mathcal{P}`.
 
         Returns
         -------
-        ac : AccessStructure
+        ac : `~linearconstruction.access_structure.AccessStructure`
             The dual access structure of ``self``.
 
         Examples

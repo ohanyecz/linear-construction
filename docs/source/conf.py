@@ -20,9 +20,9 @@ import linearconstruction
 # -- Project information -----------------------------------------------------
 
 project = 'A Linear Construction of Secret Sharing Schemes'
-copyright = '2022, Ottó Hanyecz'
 author = 'Ottó Hanyecz'
-release = '1.1.0'
+copyright = f'2022, {author}'
+release = linearconstruction.__version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,8 +35,17 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
+    'sphinx.ext.intersphinx',
     'numpydoc'
 ]
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3/', None),
+    'sage': ('https://doc.sagemath.org/html/en/reference/', None),
+}
+
+# Make sure text marked up `like this` will be interpreted as Python objects
+default_role = 'py:obj'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

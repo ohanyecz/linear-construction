@@ -2,28 +2,30 @@ from gettext import gettext as _
 from pathlib import Path
 import sys
 
+__all__ = ["FileType"]
+
 
 class FileType:
     """
     Factory for creating file object types.
 
     Instances of *OutputFileType* are typically passed as type= arguments to the
-    ``ArgumentParser`` *add_argument()* method.
+    `~argparse.ArgumentParser.add_argument` method.
 
-    This class is similar to ``argparse.FileType`` object but modified to create the output file.
+    This class is similar to `~argparse.FileType` but modified to create the output file.
 
     Attributes
     ----------
     mode: str
         A string indicating how the file is to be opened. Accepts the same values as the
-        builtin ``open()`` function.
+        builtin `open()` function.
     bufsize: int
-        The file's desired buffer size. Accepts the same values as the builtin ``open()`` function.
+        The file's desired buffer size. Accepts the same values as the builtin `open()` function.
     encoding: str
-        The file's encoding. Accepts the same values as the builtin ``open()`` function.
+        The file's encoding. Accepts the same values as the builtin `open()` function.
     errors: str
         A string indicating how encoding and decoding errors are to be handled.
-        Accepts the same values as the builtin ``open()`` function.
+        Accepts the same values as the builtin `open()` function.
 
 
     Raises

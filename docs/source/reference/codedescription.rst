@@ -12,7 +12,8 @@ Functions
 .. autosummary::
    :toctree: api/
 
-   p_support
    epsilon
+   generate_label
    jth_unit_vector
+   p_support
    projection

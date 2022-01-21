@@ -1,28 +1,28 @@
 from itertools import chain, product
-from typing import Iterable, Iterator, Set, Tuple
+from typing import Iterable, Iterator, List, Set, Tuple
 
 from sage.all import vector, GF, span
 
-from .access_structure import AccessStructure
 from .codevector import Vector
-from .typing import Epsilon
 
 __all__ = ["p_support", "epsilon", "jth_unit_vector", "projection", "generate_label"]
 
 
 def p_support(v: Vector) -> Set[int]:
     """
-    Calculate p-support of a code vector `v`.
+    Calculate the p-support of a code vector *v*.
 
-    The p-support of vector `v` is defined as the set of coordinates, :math:`i`, :math:`1 \\leq i \\leq n`,
-    for which :math:`\\mathbf{c}^i \\ne \\mathbf{0}`:
+    Let :math:`\\mathbf{c}^i \\in \\text{GF}(q)^{p_i}`, :math:`1 \\leq i \\leq n` and
+    :math:`\\mathbf{c} = (\\mathbf{c}^1, \\dots, \\mathbf{c}^n) \\in \\text{GF}(q)^{p[\\mathcal{P}]}`.
+    The p-support of a vector :math:`\\mathbf{c}` is defined as the set of coordinates,
+    :math:`i`, :math:`(1 \\leq i \\leq n)`, for which :math:`\\mathbf{c}^i \\ne \\mathbf{0}`:
 
     .. math::
-        sup_p(\\mathbf{c}) = \\{ i : \\mathbf{c}^i \\ne \\mathbf{0} \\}
+        \\text{sup}_p(\\mathbf{c}) = \\{ i : \\mathbf{c}^i \\ne \\mathbf{0} \\}
 
     Parameters
     ----------
-    v : Vector
+    v : `~linearconstruction.codevector.Vector`
         The code vector whose p-support is calculated.
 
     Returns
@@ -32,10 +32,6 @@ def p_support(v: Vector) -> Set[int]:
 
         .. note::
             The set of coordinates are indexed from 1 instead of 0!
-
-    See Also
-    --------
-    .codevector.Vector : An object which stores a code vector.
 
     Examples
     --------
@@ -51,7 +47,7 @@ def p_support(v: Vector) -> Set[int]:
     return {i for i, cw in enumerate(v, start=1) if any(cw)}
 
 
-def epsilon(r: int, k: int) -> Epsilon:
+def epsilon(r: int, k: int) -> List[Tuple[int, int]]:
     """
     Returns a list of pairs :math:`(i,j)`, where :math:`1 \\leq i \\leq r, 1 \\leq j \\leq k`.
 
@@ -78,7 +74,7 @@ def epsilon(r: int, k: int) -> Epsilon:
 
 def jth_unit_vector(j: int, dim: int, base_ring: GF) -> vector:
     """
-    Creates the j'th unit vector of *dim* in *base_ring*.
+    Creates the *j*'th unit vector of *dim* in *base_ring*.
 
     Parameters
     ----------
@@ -120,9 +116,21 @@ def projection(v: Vector, x: Iterable, pi: Tuple[int, ...]) -> Vector:
     """
     Calculates the projection of code vector *v* on set of participants *x*.
 
+    Let :math:`\\mathbf{c}^i \\in \\text{GF}(q)^{p_i}`, :math:`1 \\leq i \\leq n` and
+    :math:`\\mathbf{c} = (\\mathbf{c}^1, \\dots, \\mathbf{c}^n) \\in \\text{GF}(q)^{p[\\mathcal{P}]}`.
+    Let :math:`X = \\{ i_1, \\dots, i_m \\} \\subseteq \\{ 1, \\dots, n \\}`, with
+    :math:`i_1 < \\dots < i_m`. Then the projection of vector :math:`\\mathbf{c}`
+    on :math:`X` is defined as
+
+    .. math::
+
+        \\mathbf{c}_X = (\\mathbf{c}^{i_1}, \\dots, \\mathbf{c}^{i_m}).
+
+    Notice that :math:`\\mathbf{c} = \\mathbf{c}_{\\mathcal{P}}`.
+
     Parameters
     ----------
-    v : Vector
+    v : `~linearconstruction.codevector.Vector`
         The code vector whose projection should be calculated.
     x : set
         The set of participants taking the projection on.
@@ -132,12 +140,8 @@ def projection(v: Vector, x: Iterable, pi: Tuple[int, ...]) -> Vector:
 
     Returns
     -------
-    v : Vector
+    v : `~linearconstruction.codevector.Vector`
         The projection of *v* on *x*.
-
-    See Also
-    --------
-    .codevector.Vector : An object which stores a code vector.
 
     Examples
     --------
@@ -178,7 +182,7 @@ def generate_label(participants: set,
     """
     Make an iterator over the possible edge labels.
 
-    An edge is labeled with a set of vectors :math:`S \\in GF(q)^{p[P]}` having the
+    An edge is labeled with a set of vectors :math:`S \\in \\text{GF}(q)^{p[P]}` having the
     property that for all :math:`\\mathbf{c} \\in S`
 
     .. math::
@@ -203,12 +207,7 @@ def generate_label(participants: set,
     Returns
     -------
     it : Iterator
-        An iterator on *Vectors* over the possible edge labels.
-
-    See Also
-    --------
-    .codevector.Vector : An object which stores a code vector.
-
+        An iterator on `~linearconstruction.codevector.Vector` over the possible edge labels.
     """
     parts = []
     for p in participants:
