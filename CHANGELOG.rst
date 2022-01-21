@@ -1,3 +1,11 @@
+1.1.1 (2022-01-19)
+==================
+
+- Updated documentation.
+
+- Added exceptions specific to this project.
+
+
 1.1.0 (2022-01-17)
 ==================
 
