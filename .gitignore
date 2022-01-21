@@ -2,8 +2,10 @@ venv*/
 .idea/
 docs/source/reference/api/
 docs/build/
+__pycache__/
 
 playground.py
 *.sage.py
 *.sage
 *.pdf
+TODO.txt
