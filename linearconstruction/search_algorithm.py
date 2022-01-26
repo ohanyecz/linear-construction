@@ -303,7 +303,14 @@ class SearchAlgorithm:
 
                 b_idx = next((j for j, x in enumerate(c_proj_ba) if x), None)
                 if b_idx is not None:
-                    c_proj_b_inv = inverse_mod(int(c_proj_ba[b_idx]), base_ring.order())
+                    try:
+                        const = c_proj_ba[b_idx].integer_representation()
+                    except AttributeError:
+                        const = c_proj_ba[b_idx]
+                    try:
+                        c_proj_b_inv = inverse_mod(int(const), base_ring.order())
+                    except ZeroDivisionError:
+                        return False, aa, ba, ca
                     temp = vector(ba[i][:, b_idx].list(), base_ring)
                     bb[i] = ba[i] - temp.outer_product(c_proj_b_inv * c_proj_to_d_compl.c * ba[i])
                     if not f.is_zero():

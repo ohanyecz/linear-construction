@@ -150,6 +150,11 @@ def monitor_finished_tasks(done_queue: Queue,
             is_finished.set()
 
 
+def integer_representation(mat: matrix) -> matrix:
+    """Return a new matrix with integer representation of elements of *mat*."""
+    return matrix(list(map(lambda x: finite_field_map[x], row)) for row in mat)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A linear construction of secret sharing schemes. See the manual for "
                                                  "usage examples.")
@@ -216,7 +221,11 @@ if __name__ == '__main__':
     if len(list(factor(args.order))) > 1:
         raise ValueError(f"Order of the finite field is not a prime power.")
     q = args.order
-    finite_field = GF(q)
+    if q > 2:
+        finite_field = GF(q, impl="givaro")
+        finite_field_map = {i: i.integer_representation() for i in finite_field.list()}
+    else:
+        finite_field = GF(q)
     eps = epsilon(r, k)
     p = args.parameters
     parameters = tuple(int(i) for i in p.split(",")) if "," in p else int(p)
@@ -281,6 +290,10 @@ if __name__ == '__main__':
             args.output.write(f"Seed: {args.seed}\n")
             args.output.write(f"Number of processors: {args.processors}\n")
             args.output.write(f"Running time: {delta} seconds\n\n")
+            if q > 2:
+                generator_matrix = integer_representation(generator_matrix)
+                parity_check_matrix = integer_representation(parity_check_matrix)
+                gen_vec_matrix = integer_representation(gen_vec_matrix)
             args.output.write(f"The generator matrix:\n")
             for row in generator_matrix:
                 args.output.write(str(row) + "\n")
