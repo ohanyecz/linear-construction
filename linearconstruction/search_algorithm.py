@@ -1,6 +1,15 @@
 from copy import deepcopy
+from functools import reduce
 from itertools import product
+try:
+    from math import comb
+except ImportError:
+    from math import factorial
+
+    def comb(n, k):
+        return factorial(n) / (factorial(k) * factorial(n - k))
 from multiprocessing import Event, Value  # import only for typing
+from operator import mul
 from queue import Queue  # import only for typing
 import random
 from typing import Dict, List, Union, Tuple, Set
@@ -41,12 +50,15 @@ class SearchAlgorithm:
                  eps: List[Tuple[int, int]],
                  parameters: Tuple[int, ...],
                  height: int) -> None:
+        self.leaf_number = None
+        self.edges_on_levels = None
         self.ac = ac
         self.k = k
         self.base_ring = base_ring
         self.eps = eps
         self.parameters = parameters
         self.height = height
+        self.estimate_leaf_number()
 
     def sequential_search(self,
                           level: int,
@@ -55,7 +67,8 @@ class SearchAlgorithm:
                           aa: List[matrix],
                           ba: List[matrix],
                           ca: List[Vector],
-                          skip: float) -> Union[List[Vector], List]:
+                          skip: float,
+                          leaf_counter: Value) -> Union[List[Vector], List]:
         """
         Sequential implementation of the search algorithm.
 
@@ -76,6 +89,8 @@ class SearchAlgorithm:
             The list of candidate vectors.
         skip : float
             The skip parameter passed as argument.
+        leaf_counter : `~multiprocessing.Value`
+            A shared variable which counts the leaves checked in the search tree.
 
         Returns
         -------
@@ -103,12 +118,13 @@ class SearchAlgorithm:
         b, ab, bb, cb = self._determine_d_plus(level, x_i, lab, s_n, aa, ba, ca)
 
         if b:
-            res = self.sequential_search(level + 1, s_m, s_n, ab, bb, cb, skip)
+            res = self.sequential_search(level + 1, s_m, s_n, ab, bb, cb, skip, leaf_counter)
             if res:
                 return res
 
         generated_labels = list(generate_label(self.ac.participants, self.parameters, x_i, self.base_ring, span_of_labels))
         generated_labels = random.sample(generated_labels, k=int((1 - skip) * len(generated_labels)))
+        m = self._estimate_number_of_leaves_below(level) * len(generated_labels) + 1
 
         for potential_label in generated_labels:
             s_n = s_n | {level}
@@ -116,9 +132,12 @@ class SearchAlgorithm:
             b, ab, bb, cb = self._determine_d_plus(level, x_i, potential_label, s_n, aa, ba, ca)
 
             if b:
-                res = self.sequential_search(level + 1, s_m, s_n, ab, bb, cb, skip)
+                res = self.sequential_search(level + 1, s_m, s_n, ab, bb, cb, skip, leaf_counter)
                 if res:
                     return res
+
+        with leaf_counter.get_lock():
+            leaf_counter.value += m
         return res
 
     def parallel_search(self,
@@ -130,7 +149,8 @@ class SearchAlgorithm:
                         ca: List[Vector],
                         skip: float,
                         task_queue: Queue,
-                        is_finished: Event) -> None:
+                        is_finished: Event,
+                        leaf_counter: Value) -> None:
         """
         The parallel implementation of the search algorithm.
 
@@ -161,12 +181,15 @@ class SearchAlgorithm:
         is_finished : Event
             A shared event between the processes. If set, a solution is found (positive or
             negative) and the worker processes terminate.
+        leaf_counter : `~multiprocessing.Value`
+            A shared variable which counts the leaves checked in the search tree.
 
         """
         if level == self.height // 2 + 1:
             task_queue.put((level, s_m, s_n, aa, ba, ca, skip))
             return
 
+        m = self._estimate_number_of_leaves_below(level)
         eps_for_this_level = "".join(str(i) for i in self.eps[level - 1])
         x_i = self.ac.gamma_min[int(eps_for_this_level[0])]
         labels = self._break_labels(list(s_m.values()))
@@ -182,7 +205,10 @@ class SearchAlgorithm:
         b, ab, bb, cb = self._determine_d_plus(level, x_i, lab, s_n, aa, ba, ca)
 
         if b and not is_finished.is_set():
-            self.parallel_search(level + 1, s_m, s_n, ab, bb, cb, skip, task_queue, is_finished)
+            self.parallel_search(level + 1, s_m, s_n, ab, bb, cb, skip, task_queue, is_finished, leaf_counter)
+        elif not b:
+            with leaf_counter.get_lock():
+                leaf_counter.value += m
         elif is_finished.is_set():
             return
 
@@ -195,7 +221,10 @@ class SearchAlgorithm:
             b, ab, bb, cb = self._determine_d_plus(level, x_i, potential_label, s_n, aa, ba, ca)
 
             if b and not is_finished.is_set():
-                self.parallel_search(level + 1, s_m, s_n, ab, bb, cb, skip, task_queue, is_finished)
+                self.parallel_search(level + 1, s_m, s_n, ab, bb, cb, skip, task_queue, is_finished, leaf_counter)
+            elif not b:
+                with leaf_counter.get_lock():
+                    leaf_counter.value += m
             elif is_finished.is_set():
                 return
 
@@ -242,13 +271,24 @@ class SearchAlgorithm:
                                   f"G[{set(x)}] results in a linear combination of unit vectors"
         return True, ""
 
-    def _count_increment_leaves_below(self,
-                                      level: int,
-                                      x_i: Set[int],
-                                      leaf_counter: Value) -> None:
-        n_leaves = (self.base_ring.order() ** sum(self.parameters[i - 1] for i in x_i)) ** (self.height - level)
-        with leaf_counter.get_lock():
-            leaf_counter += n_leaves
+    def estimate_leaf_number(self) -> None:
+        """Estimate the number of candidate leaves in the search tree."""
+        p_sum = sum(self.parameters)
+        x_sum = [sum(self.parameters[j - 1] for j in x) for x in self.ac.gamma_min.values()]
+        q, r, k = int(self.base_ring.order()), len(self.ac.gamma_min), self.k
+
+        if p_sum >= self.height:
+            self.leaf_number = q ** (k * sum(x_sum))
+            self.edges_on_levels = [q ** sum(self.parameters[i - 1] for i in self.ac.gamma_min[j]) for j in range(1, r + 1)] * 2
+        else:
+            self.leaf_number = comb(r * k, p_sum) * q ** (p_sum * max(x_sum))
+
+    def _estimate_number_of_leaves_below(self, level: int) -> int:
+        if sum(self.parameters) >= self.height:
+            leaves = self.leaf_number // reduce(mul, self.edges_on_levels[:level])
+            return leaves
+
+        return 1
 
     def _d_plus(self,
                 label: Union[Vector, List[Vector]],

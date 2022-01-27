@@ -49,7 +49,7 @@ def show_progressbar(leaf_counter: Value,
     """
     pbar = tqdm(total=estimate_leaf_number(),
                 bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]",
-                desc="Leaves",
+                desc="Checking leaves",
                 dynamic_ncols=True)
     old_value = leaf_counter.value
     while not is_finished.is_set():
@@ -62,7 +62,8 @@ def show_progressbar(leaf_counter: Value,
 
 def process_tasks(task_queue: Queue,
                   done_queue: Queue,
-                  is_finished: Event) -> None:
+                  is_finished: Event,
+                  leaf_counter: Value) -> None:
     """
     Processes a task from the *task_queue* and puts the result to *done_queue*.
 
@@ -78,7 +79,7 @@ def process_tasks(task_queue: Queue,
     while not is_finished.is_set():
         params = task_queue.get()
         if params != "DONE":
-            res = search.sequential_search(*params)
+            res = search.sequential_search(*params, leaf_counter)
             done_queue.put(res)
         else:
             break
@@ -86,7 +87,8 @@ def process_tasks(task_queue: Queue,
 
 
 def submit_tasks(task_queue: Queue,
-                 is_finished: Event) -> None:
+                 is_finished: Event,
+                 leaf_counter: Value) -> None:
     """
     Submits a task to a process from the task queue.
 
@@ -110,7 +112,7 @@ def submit_tasks(task_queue: Queue,
     ba = [matrix.identity(i) for i in id_matrix_sizes]
     ca = []
 
-    search.parallel_search(1, s_m, s_n, aa, ba, ca, args.skip, task_queue, is_finished)
+    search.parallel_search(1, s_m, s_n, aa, ba, ca, args.skip, task_queue, is_finished, leaf_counter)
     task_queue.put("DONE")
 
 
@@ -266,9 +268,9 @@ if __name__ == '__main__':
     monitor_process.start()
 
     task_builder_process = Process(target=submit_tasks,
-                                   args=(task_queue, is_finished))
+                                   args=(task_queue, is_finished, leaf_counter))
     worker_processes = [Process(target=process_tasks,
-                                args=(task_queue, done_queue, is_finished)) for _ in range(args.processors)]
+                                args=(task_queue, done_queue, is_finished, leaf_counter)) for _ in range(args.processors)]
     for p in worker_processes:
         p.start()
 
