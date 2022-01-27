@@ -209,7 +209,8 @@ if __name__ == '__main__':
                         action="store_true",
                         help="Be verbose.")
     parser.add_argument("--version",
-                        action="version")
+                        action="version",
+                        version=f"linear-construction.py v{version.__version__}")
 
     access_structure_group = parser.add_argument_group(title="Access structure modifiers")
     access_structure_group.add_argument("-d", "--dual",
