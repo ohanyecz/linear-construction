@@ -155,6 +155,21 @@ def integer_representation(mat: matrix) -> matrix:
     return matrix(list(map(lambda x: finite_field_map[x], row)) for row in mat)
 
 
+def write_info() -> None:
+    """Writes the input parameters and results to *args.output*."""
+    args.output.write(f"Participants: {ac.participants}\n")
+    args.output.write(f"Parameters: {parameters}\n")
+    args.output.write(f"Minimal qualified groups: {str(ac.gamma_min)}\n")
+    args.output.write(f"Maximal forbidden groups: {str(ac.delta_max)}\n")
+    args.output.write(f"Dual: {args.dual}\n")
+    args.output.write(f"Finite field: {str(finite_field)}\n")
+    args.output.write(f"Size of the secret: {k}\n")
+    args.output.write(f"Skip: {args.skip}\n")
+    args.output.write(f"Seed: {args.seed}\n")
+    args.output.write(f"Number of processors: {args.processors}\n")
+    args.output.write(f"Running time: {delta} seconds\n\n")
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A linear construction of secret sharing schemes. See the manual for "
                                                  "usage examples.")
@@ -273,23 +288,13 @@ if __name__ == '__main__':
         p.join()
     monitor_process.join()
 
+    write_info()
     if result:
         unit_vectors = [jth_unit_vector(j[1], k, finite_field) for j in eps]
         generator_matrix = matrix(finite_field, [e.list() + v.c.list() for e, v in zip(unit_vectors, result)])
         parity_check_matrix = generator_matrix.right_kernel_matrix()
         gen_vec_matrix = parity_check_matrix[:, 2:]
         if search.is_valid_gen_vec_constr(gen_vec_matrix):
-            args.output.write(f"Participants: {ac.participants}\n")
-            args.output.write(f"Parameters: {parameters}\n")
-            args.output.write(f"Minimal qualified groups: {str(ac.gamma_min)}\n")
-            args.output.write(f"Maximal forbidden groups: {str(ac.delta_max)}\n")
-            args.output.write(f"Dual: {args.dual}\n")
-            args.output.write(f"Finite field: {str(finite_field)}\n")
-            args.output.write(f"Size of the secret: {k}\n")
-            args.output.write(f"Skip: {args.skip}\n")
-            args.output.write(f"Seed: {args.seed}\n")
-            args.output.write(f"Number of processors: {args.processors}\n")
-            args.output.write(f"Running time: {delta} seconds\n\n")
             if q > 2:
                 generator_matrix = integer_representation(generator_matrix)
                 parity_check_matrix = integer_representation(parity_check_matrix)
@@ -304,8 +309,8 @@ if __name__ == '__main__':
             for row in gen_vec_matrix:
                 args.output.write(str(row) + "\n")
         else:
-            args.output.write(f"The candidate vectors are not valid.")
+            args.output.write(f"The candidate vectors are not valid.\n")
     else:
-        args.output.write(f"There does not exists a general vector space construction with the specified parameters!")
+        args.output.write(f"There does not exists a general vector space construction with the specified parameters!\n")
     print("done.")
     args.output.close()
