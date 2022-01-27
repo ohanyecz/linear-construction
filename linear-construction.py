@@ -10,26 +10,7 @@ from queue import Queue  # import only for typing
 from sage.all import factor, GF, matrix, span
 from tqdm import tqdm
 
-from linearconstruction.utils import FileType
 from linearconstruction import *
-
-
-try:
-    from math import comb
-except ImportError:
-    from math import factorial
-
-    def comb(n, k):
-        return factorial(n) / (factorial(k) * factorial(n - k))
-
-
-def estimate_leaf_number() -> int:
-    p_sum = sum(parameters)
-    x_sum = [sum(parameters[j - 1] for j in x) for x in ac.gamma_min.values()]
-
-    if p_sum >= r * k:
-        return q ** (k * sum(x_sum))
-    return comb(r * k, p_sum) * q ** (p_sum * max(x_sum))
 
 
 def show_progressbar(leaf_counter: Value,
@@ -47,7 +28,7 @@ def show_progressbar(leaf_counter: Value,
     is_finished : threading.Event
         ``True`` if there is or is not a set of candidate vectors, ``False`` otherwise.
     """
-    pbar = tqdm(total=estimate_leaf_number(),
+    pbar = tqdm(total=search.leaf_number,
                 bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]",
                 desc="Checking leaves",
                 dynamic_ncols=True)
