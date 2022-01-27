@@ -200,11 +200,7 @@ if __name__ == '__main__':
     parser.add_argument("-o", "--output",
                         type=FileType("w+"),
                         default="-",
-                        help="Save the solution with the arguments passed (default: stdout)")
-    parser.add_argument("-f", "--force",
-                        action="store_true",
-                        help="If `True` override the output file if exists. Otherwise, save to an output file with "
-                             "prefix passed to argument --output. (default: %(default)s)")
+                        help="Save the solution to the file passed (default: stdout)")
     parser.add_argument("-v", "--verbose",
                         action="store_true",
                         help="Be verbose.")
