@@ -28,10 +28,11 @@ def show_progressbar(leaf_counter: Value,
     is_finished : threading.Event
         ``True`` if there is or is not a set of candidate vectors, ``False`` otherwise.
     """
-    pbar = tqdm(total=search.leaf_number,
+    pbar = tqdm(total=int(search.leaf_number * (1 - args.skip)),
                 bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]",
                 desc="Checking leaves",
-                dynamic_ncols=True)
+                dynamic_ncols=True,
+                miniters=1)
     old_value = leaf_counter.value
     while not is_finished.is_set():
         v = leaf_counter.value
