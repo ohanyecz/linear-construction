@@ -204,13 +204,13 @@ class SearchAlgorithm:
         lab = self._break_labels(lab)
         b, ab, bb, cb = self._determine_d_plus(level, x_i, lab, s_n, aa, ba, ca)
 
-        if b and not is_finished.is_set():
+        if is_finished.is_set():
+            return
+        elif b and not is_finished.is_set():
             self.parallel_search(level + 1, s_m, s_n, ab, bb, cb, skip, task_queue, is_finished, leaf_counter)
         elif not b:
             with leaf_counter.get_lock():
                 leaf_counter.value += m
-        elif is_finished.is_set():
-            return
 
         generated_labels = list(generate_label(self.ac.participants, self.parameters, x_i, self.base_ring, span_of_labels))
         generated_labels = random.sample(generated_labels, k=int((1 - skip) * len(generated_labels)))
@@ -220,13 +220,13 @@ class SearchAlgorithm:
             s_m = {**s_m, eps_for_this_level: potential_label}
             b, ab, bb, cb = self._determine_d_plus(level, x_i, potential_label, s_n, aa, ba, ca)
 
-            if b and not is_finished.is_set():
+            if is_finished.is_set():
+                return
+            elif b and not is_finished.is_set():
                 self.parallel_search(level + 1, s_m, s_n, ab, bb, cb, skip, task_queue, is_finished, leaf_counter)
             elif not b:
                 with leaf_counter.get_lock():
                     leaf_counter.value += m
-            elif is_finished.is_set():
-                return
 
     def is_valid_gen_vec_constr(self, possible_matrix: matrix) -> Tuple[bool, str]:
         """Checks conditions V1 and V2 of Theorem 2.1."""
