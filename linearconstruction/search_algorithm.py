@@ -40,6 +40,11 @@ class SearchAlgorithm:
         A list of tuples of code vector indices.
     parameters : tuple
         The parameters of all participants.
+    skip : float
+        Defines the portion of the edges on each level to be skipped.
+
+        .. versionadded:: 1.2.0
+
     height : int
         The height of the search tree.
     """
@@ -49,6 +54,7 @@ class SearchAlgorithm:
                  base_ring: GF,
                  eps: List[Tuple[int, int]],
                  parameters: Tuple[int, ...],
+                 skip: float,
                  height: int) -> None:
         self.leaf_number = None
         self.edges_on_levels = None
@@ -57,6 +63,7 @@ class SearchAlgorithm:
         self.base_ring = base_ring
         self.eps = eps
         self.parameters = parameters
+        self.skip = skip
         self.height = height
         self.estimate_leaf_number()
 
@@ -67,10 +74,12 @@ class SearchAlgorithm:
                           aa: List[matrix],
                           ba: List[matrix],
                           ca: List[Vector],
-                          skip: float,
                           leaf_counter: Value) -> Union[List[Vector], List]:
         """
         Sequential implementation of the search algorithm.
+
+        .. versionchanged:: 1.2.0
+           Removed parameter *skip*.
 
         Parameters
         ----------
@@ -87,8 +96,6 @@ class SearchAlgorithm:
             A list of matrices :math:`B_i(\\texttt{n}')`.
         ca : list
             The list of candidate vectors.
-        skip : float
-            The skip parameter passed as argument.
         leaf_counter : `~multiprocessing.Value`
             A shared variable which counts the leaves checked in the search tree.
 
@@ -118,13 +125,13 @@ class SearchAlgorithm:
         b, ab, bb, cb = self._determine_d_plus(level, x_i, lab, s_n, aa, ba, ca)
 
         if b:
-            res = self.sequential_search(level + 1, s_m, s_n, ab, bb, cb, skip, leaf_counter)
+            res = self.sequential_search(level + 1, s_m, s_n, ab, bb, cb, leaf_counter)
             if res:
                 return res
 
         generated_labels = list(generate_label(self.ac.participants, self.parameters, x_i, self.base_ring, span_of_labels))
-        generated_labels = random.sample(generated_labels, k=int((1 - skip) * len(generated_labels)))
-        m = self._estimate_number_of_leaves_below(level) * len(generated_labels) + 1
+        generated_labels = random.sample(generated_labels, k=int((1 - self.skip) * len(generated_labels)))
+        m = self._estimate_number_of_leaves_below(level)
 
         for potential_label in generated_labels:
             s_n = s_n | {level}
@@ -132,7 +139,7 @@ class SearchAlgorithm:
             b, ab, bb, cb = self._determine_d_plus(level, x_i, potential_label, s_n, aa, ba, ca)
 
             if b:
-                res = self.sequential_search(level + 1, s_m, s_n, ab, bb, cb, skip, leaf_counter)
+                res = self.sequential_search(level + 1, s_m, s_n, ab, bb, cb, leaf_counter)
                 if res:
                     return res
 
@@ -147,7 +154,6 @@ class SearchAlgorithm:
                         aa: List[matrix],
                         ba: List[matrix],
                         ca: List[Vector],
-                        skip: float,
                         task_queue: Queue,
                         is_finished: Event,
                         leaf_counter: Value) -> None:
@@ -158,6 +164,9 @@ class SearchAlgorithm:
         puts the parameters to the *task_queue*. The other processes can use these
         parameters to run method `~sequential_search()` to find a solution (if there
         are any).
+
+        .. versionchanged:: 1.2.0
+           Removed parameter *skip*.
 
         Parameters
         ----------
@@ -174,8 +183,6 @@ class SearchAlgorithm:
             A list of matrices :math:`B_i(\\texttt{n}')`.
         ca : list
             The list of candidate vectors.
-        skip : float
-            The skip parameter passed as argument.
         task_queue : Queue
             The task queue for other processes.
         is_finished : Event
@@ -186,7 +193,7 @@ class SearchAlgorithm:
 
         """
         if level == self.height // 2 + 1:
-            task_queue.put((level, s_m, s_n, aa, ba, ca, skip))
+            task_queue.put((level, s_m, s_n, aa, ba, ca))
             return
 
         m = self._estimate_number_of_leaves_below(level)
@@ -207,13 +214,13 @@ class SearchAlgorithm:
         if is_finished.is_set():
             return
         elif b and not is_finished.is_set():
-            self.parallel_search(level + 1, s_m, s_n, ab, bb, cb, skip, task_queue, is_finished, leaf_counter)
+            self.parallel_search(level + 1, s_m, s_n, ab, bb, cb, task_queue, is_finished, leaf_counter)
         elif not b:
             with leaf_counter.get_lock():
                 leaf_counter.value += m
 
         generated_labels = list(generate_label(self.ac.participants, self.parameters, x_i, self.base_ring, span_of_labels))
-        generated_labels = random.sample(generated_labels, k=int((1 - skip) * len(generated_labels)))
+        generated_labels = random.sample(generated_labels, k=int((1 - self.skip) * len(generated_labels)))
 
         for potential_label in generated_labels:
             s_n = s_n | {level}
@@ -223,7 +230,7 @@ class SearchAlgorithm:
             if is_finished.is_set():
                 return
             elif b and not is_finished.is_set():
-                self.parallel_search(level + 1, s_m, s_n, ab, bb, cb, skip, task_queue, is_finished, leaf_counter)
+                self.parallel_search(level + 1, s_m, s_n, ab, bb, cb, task_queue, is_finished, leaf_counter)
             elif not b:
                 with leaf_counter.get_lock():
                     leaf_counter.value += m
@@ -278,8 +285,9 @@ class SearchAlgorithm:
         q, r, k = int(self.base_ring.order()), len(self.ac.gamma_min), self.k
 
         if p_sum >= self.height:
-            self.leaf_number = q ** (k * sum(x_sum))
-            self.edges_on_levels = [q ** sum(self.parameters[i - 1] for i in self.ac.gamma_min[j]) for j in range(1, r + 1)] * 2
+            edges_on_levels = [q ** sum(self.parameters[i - 1] for i in self.ac.gamma_min[j]) for j in range(1, r + 1)] * 2
+            self.edges_on_levels = [int(i * (1 - self.skip)) for i in edges_on_levels]
+            self.leaf_number = reduce(mul, self.edges_on_levels)
         else:
             self.leaf_number = comb(r * k, p_sum) * q ** (p_sum * max(x_sum))
 

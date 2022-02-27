@@ -28,7 +28,7 @@ def show_progressbar(leaf_counter: Value,
     is_finished : threading.Event
         ``True`` if there is or is not a set of candidate vectors, ``False`` otherwise.
     """
-    pbar = tqdm(total=int(search.leaf_number * (1 - args.skip)),
+    pbar = tqdm(total=search.leaf_number,
                 bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]",
                 desc="Checking leaves",
                 dynamic_ncols=True,
@@ -94,7 +94,7 @@ def submit_tasks(task_queue: Queue,
     ba = [matrix.identity(i) for i in id_matrix_sizes]
     ca = []
 
-    search.parallel_search(1, s_m, s_n, aa, ba, ca, args.skip, task_queue, is_finished, leaf_counter)
+    search.parallel_search(1, s_m, s_n, aa, ba, ca, task_queue, is_finished, leaf_counter)
     task_queue.put("DONE")
 
 
@@ -232,7 +232,7 @@ if __name__ == '__main__':
     leaf_counter = Value("i", 0)
     result = Manager().list()
 
-    search = SearchAlgorithm(ac, k, finite_field, eps, parameters, r * k)
+    search = SearchAlgorithm(ac, k, finite_field, eps, parameters, args.skip, r * k)
 
     if args.verbose:
         print(f"Created a '{finite_field}'")
